@@ -7,16 +7,17 @@ import (
 )
 
 const (
-	categoryURL    = "https://api.chucknorris.io/jokes/categories"
-	jokeURL        = "https://api.chucknorris.io/jokes/random?category="
 	topic          = "jokes"
-	kafkaBrokerURL = "localhost:9092"
+	kafkaBrokerURL = "127.0.0.1:9092"
 )
 
 func main() {
+	producer := producer.NewPublisher(topic, kafkaBrokerURL)
+	consumer := consumer.NewConsumer(topic, kafkaBrokerURL)
 	wg := sync.WaitGroup{}
+
 	wg.Add(1)
-	go producer.StartPublishingToTopic(topic, kafkaBrokerURL)
-	go consumer.SubscribeToTopic(topic, kafkaBrokerURL, &wg)
+	go producer.StartPublishingToTopic()
+	go consumer.SubscribeToTopic(&wg)
 	wg.Wait()
 }

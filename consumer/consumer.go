@@ -9,11 +9,23 @@ import (
 	kafka "github.com/segmentio/kafka-go"
 )
 
-func SubscribeToTopic(kafkaTopic string, brokerURL string, wg *sync.WaitGroup) {
+type consumer struct {
+	topicName string
+	brokerURL string
+}
+
+func NewConsumer(topicName string, brokerURL string) *consumer {
+	return &consumer{
+		topicName: topicName,
+		brokerURL: brokerURL,
+	}
+}
+
+func (c *consumer) SubscribeToTopic(wg *sync.WaitGroup) {
 	defer wg.Done()
 	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{brokerURL},
-		Topic:     kafkaTopic,
+		Brokers:   []string{c.brokerURL},
+		Topic:     c.topicName,
 		Partition: 0,
 	})
 

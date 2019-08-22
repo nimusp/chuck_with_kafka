@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"sync"
 	"time"
 
 	kafka "github.com/segmentio/kafka-go"
@@ -18,19 +19,34 @@ const (
 	jokeURL     = "https://api.chucknorris.io/jokes/random?category="
 )
 
-func StartPublishingToTopic(kafkaTopic string, brokerURL string) {
-	connection, err := kafka.DialLeader(context.Background(), "tcp", brokerURL, kafkaTopic, 0)
+type publisher struct {
+	topicName string
+	brokerURL string
+}
+
+func NewPublisher(topicName string, brokerURL string) *publisher {
+	return &publisher{
+		topicName: topicName,
+		brokerURL: brokerURL,
+	}
+}
+
+func (p *publisher) StartPublishingToTopic() {
+	connection, err := kafka.DialLeader(context.Background(), "tcp", p.brokerURL, p.topicName, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer connection.Close()
 
 	clientWithTimeout := http.Client{Timeout: 5 * time.Second}
+	mutex := sync.Mutex{}
 
-	for {
+	processJoke := func() {
 		category := loadCategory(&clientWithTimeout, categoryURL)
 		joke := loadJoke(&clientWithTimeout, category)
 
+		mutex.Lock()
+		defer mutex.Unlock()
 		_, err = connection.WriteMessages(
 			kafka.Message{
 				Key:   []byte(category),
@@ -41,8 +57,12 @@ func StartPublishingToTopic(kafkaTopic string, brokerURL string) {
 			log.Fatal(err)
 		}
 
-		log.Println("Written to Kafka " + category)
-		time.Sleep(2 * time.Second)
+		log.Println("Wrote to Kafka " + category)
+	}
+
+	for {
+		go processJoke()
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 
