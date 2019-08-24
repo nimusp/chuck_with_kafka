@@ -4,14 +4,18 @@ import (
 	"./consumer"
 	"./producer"
 	"sync"
+	"time"
 )
 
 const (
 	topic          = "jokes"
-	kafkaBrokerURL = "127.0.0.1:9092"
+	kafkaBrokerURL = "kafka:9092"
 )
 
 func main() {
+	// ожидание запуска сервиса Kafka
+	time.Sleep(15 * time.Second)
+
 	producer := producer.NewPublisher(topic, kafkaBrokerURL)
 	consumer := consumer.NewConsumer(topic, kafkaBrokerURL)
 	wg := sync.WaitGroup{}

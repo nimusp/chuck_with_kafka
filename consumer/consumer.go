@@ -30,7 +30,7 @@ func (c *consumer) SubscribeToTopic(wg *sync.WaitGroup) {
 	})
 
 	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 		msg, err := reader.ReadMessage(ctx)
 		if err != nil {
